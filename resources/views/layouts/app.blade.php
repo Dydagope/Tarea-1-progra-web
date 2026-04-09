@@ -70,6 +70,18 @@
             margin-bottom: 25px;
         }
 
+        .top-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .top-actions form {
+            margin: 0;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -100,6 +112,8 @@
         a {
             color: #2563eb;
             text-decoration: none;
+            font-size: 16px;
+            line-height: 1.5;
         }
 
         a:hover {
@@ -148,11 +162,39 @@
             border-radius: 10px;
             font-weight: bold;
             text-decoration: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1.5;
         }
 
         .btn:hover {
             background: #1d4ed8;
             text-decoration: none;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
         }
 
         ul {
@@ -176,6 +218,61 @@
             font-weight: bold;
         }
 
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+        }
+
+        .errors {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 15px;
+        }
+
+        .table-action-form {
+            margin-top: 8px;
+        }
+
+        .table-action-btn {
+            background: none;
+            border: none;
+            color: #dc2626;
+            cursor: pointer;
+            padding: 0;
+            font: inherit;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .table-action-btn:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 800px) {
             .detail-grid {
                 grid-template-columns: 1fr;
@@ -194,7 +291,7 @@
 <body>
     <header>
         <h1>Biblioteca académica</h1>
-        <p>Sitio desarrollado con Laravel y Blade</p>
+        <p>Sitio desarrollado con Laravel, Blade y SQLite</p>
 
         <nav>
             <a href="{{ route('books.index') }}">Libros</a>
@@ -204,6 +301,21 @@
     </header>
 
     <div class="container">
+        @if(session('success'))
+            <div class="success">{{ session('success') }}</div>
+        @endif
+
+        @if($errors->any())
+            <div class="errors">
+                <strong>Se encontraron errores:</strong>
+                <ul>
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         @yield('content')
     </div>
 </body>

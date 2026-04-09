@@ -2,89 +2,77 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Publisher;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class PublisherController extends Controller
 {
-    private function getPublishers()
+    public function index(): View
     {
-        return [
-            [
-                'id' => 1,
-                'name' => 'John Wiley & Sons',
-                'country' => 'United States',
-                'founded' => 1807,
-                'genre' => 'Academic'
-            ],
-            [
-                'id' => 2,
-                'name' => 'Pearson Education',
-                'country' => 'United Kingdom',
-                'founded' => 1844,
-                'genre' => 'Education'
-            ]
-        ];
-    }
-
-    private function getBooks()
-    {
-        return [
-            [
-                'id' => 1,
-                'title' => 'Operating System Concepts',
-                'publisher_id' => 1,
-                'image' => 'images/operating.png'
-            ],
-            [
-                'id' => 2,
-                'title' => 'Database System Concepts',
-                'publisher_id' => 1,
-                'image' => 'images/database.png'
-            ],
-            [
-                'id' => 3,
-                'title' => 'Computer Networks',
-                'publisher_id' => 2,
-                'image' => 'images/computer.png'
-            ],
-            [
-                'id' => 4,
-                'title' => 'Modern Operating Systems',
-                'publisher_id' => 2,
-                'image' => 'images/modern.png'
-            ]
-        ];
-    }
-
-    public function index()
-    {
-        $publishers = $this->getPublishers();
-        $books = $this->getBooks();
-
-        foreach ($publishers as &$publisher) {
-            $publisher['books'] = array_values(array_filter($books, function ($book) use ($publisher) {
-                return $book['publisher_id'] == $publisher['id'];
-            }));
-        }
-
+        $publishers = Publisher::with('books')->orderBy('id')->get();
         return view('publishers.index', compact('publishers'));
     }
 
-    public function show($id)
+    public function show(int $id): View
     {
-        $publishers = $this->getPublishers();
-        $books = $this->getBooks();
-
-        $publisher = collect($publishers)->firstWhere('id', (int)$id);
-
-        if (!$publisher) {
-            abort(404);
-        }
-
-        $publisher['books'] = array_values(array_filter($books, function ($book) use ($publisher) {
-            return $book['publisher_id'] == $publisher['id'];
-        }));
-
+        $publisher = Publisher::with('books')->findOrFail($id);
         return view('publishers.show', compact('publisher'));
+    }
+
+    public function create(): View
+    {
+        return view('publishers.create');
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'country' => 'required|string|max:255',
+            'founded' => 'required|integer|min:1400|max:' . date('Y'),
+            'genre' => 'required|string|max:255',
+        ]);
+
+        $publisher = Publisher::create($validated);
+
+        return redirect()
+            ->route('publishers.show', $publisher->id)
+            ->with('success', 'Editorial creada correctamente.');
+    }
+
+    public function edit(int $id): View
+    {
+        $publisher = Publisher::findOrFail($id);
+        return view('publishers.edit', compact('publisher'));
+    }
+
+    public function update(Request $request, int $id): RedirectResponse
+    {
+        $publisher = Publisher::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'country' => 'required|string|max:255',
+            'founded' => 'required|integer|min:1400|max:' . date('Y'),
+            'genre' => 'required|string|max:255',
+        ]);
+
+        $publisher->update($validated);
+
+        return redirect()
+            ->route('publishers.show', $publisher->id)
+            ->with('success', 'Editorial actualizada correctamente.');
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $publisher = Publisher::findOrFail($id);
+        $publisher->delete();
+
+        return redirect()
+            ->route('publishers.index')
+            ->with('success', 'Editorial eliminada correctamente.');
     }
 }

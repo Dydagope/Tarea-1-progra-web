@@ -2,129 +2,93 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Author;
+use App\Models\Book;
+use App\Models\Publisher;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class BookController extends Controller
 {
-    private function getAuthors()
+    public function index(): View
     {
-        return [
-            1 => [
-                'id' => 1,
-                'name' => 'Abraham Silberschatz',
-                'nationality' => 'Israeli / American',
-                'birth_year' => 1952,
-                'fields' => 'Database Systems, Operating Systems'
-            ],
-            2 => [
-                'id' => 2,
-                'name' => 'Andrew S. Tanenbaum',
-                'nationality' => 'Dutch / American',
-                'birth_year' => 1944,
-                'fields' => 'Distributed Computing, Operating Systems'
-            ]
-        ];
-    }
-
-    private function getPublishers()
-    {
-        return [
-            1 => [
-                'id' => 1,
-                'name' => 'John Wiley & Sons',
-                'country' => 'United States',
-                'founded' => 1807,
-                'genre' => 'Academic'
-            ],
-            2 => [
-                'id' => 2,
-                'name' => 'Pearson Education',
-                'country' => 'United Kingdom',
-                'founded' => 1844,
-                'genre' => 'Education'
-            ]
-        ];
-    }
-
-    private function getBooks()
-{
-    return [
-        [
-            'id' => 1,
-            'title' => 'Operating System Concepts',
-            'edition' => '10th',
-            'copyright' => 2018,
-            'language' => 'ENGLISH',
-            'pages' => 976,
-            'author_id' => 1,
-            'publisher_id' => 1,
-            'image' => 'images/operating.png'
-        ],
-        [
-            'id' => 2,
-            'title' => 'Database System Concepts',
-            'edition' => '7th',
-            'copyright' => 2019,
-            'language' => 'ENGLISH',
-            'pages' => 1376,
-            'author_id' => 1,
-            'publisher_id' => 1,
-            'image' => 'images/database.png'
-        ],
-        [
-            'id' => 3,
-            'title' => 'Computer Networks',
-            'edition' => '5th',
-            'copyright' => 2011,
-            'language' => 'ENGLISH',
-            'pages' => 960,
-            'author_id' => 2,
-            'publisher_id' => 2,
-            'image' => 'images/computer.png'
-        ],
-        [
-            'id' => 4,
-            'title' => 'Modern Operating Systems',
-            'edition' => '5th',
-            'copyright' => 2022,
-            'language' => 'ENGLISH',
-            'pages' => 1136,
-            'author_id' => 2,
-            'publisher_id' => 2,
-            'image' => 'images/modern.jpg'
-        ]
-    ];
-}
-
-    public function index()
-    {
-        $books = $this->getBooks();
-        $authors = $this->getAuthors();
-        $publishers = $this->getPublishers();
-
-        foreach ($books as &$book) {
-            $book['author'] = $authors[$book['author_id']]['name'];
-            $book['publisher'] = $publishers[$book['publisher_id']]['name'];
-        }
-
+        $books = Book::with(['author', 'publisher'])->orderBy('id')->get();
         return view('books.index', compact('books'));
     }
 
-    public function show($id)
+    public function show(int $id): View
     {
-        $books = $this->getBooks();
-        $authors = $this->getAuthors();
-        $publishers = $this->getPublishers();
-
-        $book = collect($books)->firstWhere('id', (int)$id);
-
-        if (!$book) {
-            abort(404);
-        }
-
-        $book['author'] = $authors[$book['author_id']];
-        $book['publisher'] = $publishers[$book['publisher_id']];
-
+        $book = Book::with(['author', 'publisher'])->findOrFail($id);
         return view('books.show', compact('book'));
+    }
+
+    public function create(): View
+    {
+        $authors = Author::orderBy('name')->get();
+        $publishers = Publisher::orderBy('name')->get();
+
+        return view('books.create', compact('authors', 'publishers'));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'edition' => 'required|string|max:50',
+            'copyright' => 'required|integer|min:1900|max:' . date('Y'),
+            'language' => 'required|string|max:50',
+            'pages' => 'required|integer|min:1',
+            'image' => 'nullable|string|max:255',
+            'author_id' => 'required|exists:authors,id',
+            'publisher_id' => 'required|exists:publishers,id',
+        ]);
+
+        $book = Book::create($validated);
+
+        return redirect()
+            ->route('books.show', $book->id)
+            ->with('success', 'Libro creado correctamente.');
+    }
+
+    public function edit(int $id): View
+    {
+        $book = Book::findOrFail($id);
+        $authors = Author::orderBy('name')->get();
+        $publishers = Publisher::orderBy('name')->get();
+
+        return view('books.edit', compact('book', 'authors', 'publishers'));
+    }
+
+    public function update(Request $request, int $id): RedirectResponse
+    {
+        $book = Book::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'edition' => 'required|string|max:50',
+            'copyright' => 'required|integer|min:1900|max:' . date('Y'),
+            'language' => 'required|string|max:50',
+            'pages' => 'required|integer|min:1',
+            'image' => 'nullable|string|max:255',
+            'author_id' => 'required|exists:authors,id',
+            'publisher_id' => 'required|exists:publishers,id',
+        ]);
+
+        $book->update($validated);
+
+        return redirect()
+            ->route('books.show', $book->id)
+            ->with('success', 'Libro actualizado correctamente.');
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $book = Book::findOrFail($id);
+        $book->delete();
+
+        return redirect()
+            ->route('books.index')
+            ->with('success', 'Libro eliminado correctamente.');
     }
 }
