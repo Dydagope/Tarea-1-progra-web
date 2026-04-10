@@ -18,14 +18,17 @@ WORKDIR /app
 # Copiar archivos del proyecto
 COPY . .
 
+# Asegurar que exista la base SQLite
+RUN mkdir -p /app/database && touch /app/database/database.sqlite
+
 # Instalar dependencias de Laravel
 RUN composer install --no-dev --optimize-autoloader
 
-# Generar cache limpia
+# Limpiar cachés
 RUN php artisan optimize:clear || true
 
 # Exponer puerto
 EXPOSE 10000
 
 # Comando de inicio
-CMD php artisan serve --host=0.0.0.0 --port=10000
+CMD sh -c "php artisan optimize:clear && php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=10000"
